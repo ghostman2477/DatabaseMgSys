@@ -1,16 +1,9 @@
 package basic;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Arrays;
-
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -24,22 +17,37 @@ public class Main {
             // Initialize the query parser for the table
             QueryParser parser = new QueryParser(usersTable);
 
-            // Insert some data
-            parser.parseQuery("INSERT INTO users VALUES (1, 'John Doe', 30);");
-            parser.parseQuery("INSERT INTO users VALUES (2, 'Jane Smith', 25);");
-            parser.parseQuery("INSERT INTO users VALUES (3, 'Alice Johnson', 30);");
+            // Set up the console input loop
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Enter SQL queries (type 'EXIT' to quit):");
 
-            // Select all users
-            parser.parseQuery("SELECT * FROM users;");
+            while (true) {
+                // Prompt for user input
+                System.out.print("SQL> ");
+                String query = scanner.nextLine();
 
-            // Select users where age = 30
-            parser.parseQuery("SELECT * FROM users WHERE age = 30;");
+                // Check for exit command
+                if (query.equalsIgnoreCase("EXIT")) {
+                    System.out.println("Exiting...");
+                    break;
+                }
+
+                // Parse and execute the query
+                try {
+                    parser.parseQuery(query);
+                } catch (Exception e) {
+                    System.out.println("Error executing query: " + e.getMessage());
+                }
+            }
+
+            scanner.close();
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 }
+
 
 
 
