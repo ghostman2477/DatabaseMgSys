@@ -3,10 +3,6 @@ package basic;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class QueryParser {
@@ -25,6 +21,10 @@ public class QueryParser {
             handleInsertQuery(query);
         } else if (query.startsWith("SELECT")) {
             handleSelectQuery(query);
+        } else if (query.startsWith("DELETE FROM")) {
+            handleDeleteQuery(query);
+        } else if (query.startsWith("UPDATE")) {
+            handleUpdateQuery(query);
         } else {
             System.out.println("Unknown command: " + query);
         }
@@ -56,19 +56,12 @@ public class QueryParser {
     }
 
     // Handle SELECT query with or without WHERE clause
- // Inside QueryParser class
     private void handleSelectQuery(String query) throws IOException {
-        // Make parsing case-insensitive and remove extra spaces
-        query = query.trim().replaceAll(" +", " ").toUpperCase();
-
-        // Check for table name in SELECT query
         if (query.startsWith("SELECT * FROM " + table.getTableName().toUpperCase())) {
             if (query.contains("WHERE")) {
-                // Split on WHERE to isolate the condition part
                 String[] parts = query.split("WHERE");
                 String condition = parts[1].trim();
 
-                // Split condition into column and value, such as "age = 30"
                 String[] conditionParts = condition.split("=");
                 if (conditionParts.length != 2) {
                     System.out.println("Invalid WHERE condition.");
@@ -78,10 +71,8 @@ public class QueryParser {
                 String column = conditionParts[0].trim();
                 String value = conditionParts[1].trim().replace("'", "");
 
-                // Filter rows based on condition
                 table.printFilteredTable(column, value);
             } else {
-                // No WHERE clause, print entire table
                 table.printTable();
             }
         } else {
@@ -89,5 +80,72 @@ public class QueryParser {
         }
     }
 
-}
+    // Handle DELETE query with WHERE clause
+    private void handleDeleteQuery(String query) throws IOException {
+        if (!query.startsWith("DELETE FROM " + table.getTableName().toUpperCase())) {
+            System.out.println("Invalid DELETE query.");
+            return;
+        }
 
+        if (!query.contains("WHERE")) {
+            System.out.println("DELETE requires a WHERE clause.");
+            return;
+        }
+
+        String[] parts = query.split("WHERE");
+        String condition = parts[1].trim();
+        String[] conditionParts = condition.split("=");
+
+        if (conditionParts.length != 2) {
+            System.out.println("Invalid WHERE condition in DELETE.");
+            return;
+        }
+
+        String column = conditionParts[0].trim();
+        String value = conditionParts[1].trim().replace("'", "");
+
+        table.deleteRows(column, value);
+    }
+
+    // Handle UPDATE query with SET and WHERE clause
+    private void handleUpdateQuery(String query) throws IOException {
+        if (!query.startsWith("UPDATE " + table.getTableName().toUpperCase())) {
+            System.out.println("Invalid UPDATE query.");
+            return;
+        }
+
+        if (!query.contains("SET") || !query.contains("WHERE")) {
+            System.out.println("UPDATE requires SET and WHERE clauses.");
+            return;
+        }
+
+        String[] parts = query.split("SET|WHERE");
+        if (parts.length != 3) {
+            System.out.println("Invalid UPDATE syntax.");
+            return;
+        }
+
+        String setClause = parts[1].trim();
+        String whereClause = parts[2].trim();
+
+        String[] setParts = setClause.split("=");
+        if (setParts.length != 2) {
+            System.out.println("Invalid SET clause.");
+            return;
+        }
+
+        String targetColumn = setParts[0].trim();
+        String newValue = setParts[1].trim().replace("'", "");
+
+        String[] whereParts = whereClause.split("=");
+        if (whereParts.length != 2) {
+            System.out.println("Invalid WHERE clause in UPDATE.");
+            return;
+        }
+
+        String column = whereParts[0].trim();
+        String value = whereParts[1].trim().replace("'", "");
+
+        table.updateRows(column, value, targetColumn, newValue);
+    }
+}
