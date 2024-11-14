@@ -9,7 +9,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             // Define schema for the table
-            List<String> schema = Arrays.asList("id", "name", "age");
+            List<String> schema = Arrays.asList("id", "name", "age","phone");
 
             // Create a table called "users"
             Table usersTable = new Table("users", schema);
