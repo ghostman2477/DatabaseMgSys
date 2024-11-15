@@ -34,68 +34,7 @@ public class QueryParser {
         }
     }
 
-    // Handle INSERT INTO query
-//    public void handleInsertQuery(String query) throws IOException {
-//        if (!query.contains("VALUES")) {
-//            System.out.println("Invalid INSERT query");
-//            return;
-//        }
-//
-//        // Split the query at the VALUES keyword
-//        String[] parts = query.split("VALUES");
-//        String valuesPart = parts[1].trim();
-//
-//        // Ensure the values part is properly formatted
-//        if (valuesPart.startsWith("(") && valuesPart.endsWith(");")) {
-//            // Remove the parentheses and semicolon
-//            valuesPart = valuesPart.substring(1, valuesPart.length() - 2);
-//            String[] values = valuesPart.split(",");
-//
-//            // Ensure the number of values matches the schema length
-//            if (values.length != table.getSchema().size()) {
-//                System.out.println("Incorrect number of values for insert.");
-//                return;
-//            }
-//
-//            // Clean up each value (trim spaces and remove unwanted characters)
-//            for (int i = 0; i < values.length; i++) {
-//                values[i] = values[i].trim().replace("'", "").trim();
-//            }
-//
-//            // Extract the phone number (assuming it's the 4th column)
-//            String phoneNumber = values[3]; // Phone number is the 4th column (index 3)
-//
-//            // Check if the phone number already exists
-//            if (table.getPhoneNumbers().contains(phoneNumber)) {
-//                System.out.println("Phone number already exists. Please use a unique phone number.");
-//                return;
-//            }
-//
-//            // Add the phone number to the set of existing phone numbers
-//            table.getPhoneNumbers().add(phoneNumber);
-//
-//            // Insert the row into the table
-//            table.insertRow(Arrays.asList(values)); // Insert the cleaned row into the file
-//            System.out.println("Row inserted.");
-//        } else {
-//            System.out.println("Invalid INSERT syntax.");
-//        }
-//    }
-//
-//
-//
-//    private boolean isPhoneNumberUnique(String phoneNumber) throws IOException {
-//        // Load all rows from the table and check if the phone number already exists
-//        List<List<String>> rows = table.retrieveRows();
-//        int phoneIndex = table.getSchema().indexOf("phone");
-//
-//        for (List<String> row : rows) {
-//            if (row.get(phoneIndex).equals(phoneNumber)) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
+   
     public void handleInsertQuery(String query) throws IOException {
         // Extract the values from the query
         query = query.trim().replace("insert into " + table.getTableName() + " values", "").trim();

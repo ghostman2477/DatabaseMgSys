@@ -28,54 +28,7 @@ class Table {
         
     }
     
-//    private void loadExistingPhoneNumbers() throws IOException {
-//        // The column index for 'phone' should correspond to the schema index
-//        int phoneColumnIndex = schema.indexOf("phone");
-//        
-//        if (phoneColumnIndex == -1) {
-//            throw new IllegalArgumentException("Phone column not found in the schema.");
-//        }
-//
-//        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-//            String line;
-//            reader.readLine(); // Skip header line
-//
-//            // Read all rows and load phone numbers
-//            while ((line = reader.readLine()) != null) {
-//                String[] row = line.split(",");
-//                
-//                // Ensure row has enough columns (length of schema)
-//                if (row.length > phoneColumnIndex) {
-//                    String phone = row[phoneColumnIndex].trim();
-//                    phoneNumbers.add(phone);
-//                } else {
-//                    System.out.println("Warning: Skipping row with insufficient columns: " + Arrays.toString(row));
-//                }
-//            }
-//        }
-//    }
-    
-//    private void loadExistingPhoneNumbers() throws IOException {
-//        List<List<String>> rows = retrieveRows();
-//        int phoneIndex = schema.indexOf("phone");
-//
-//        // Debugging: Print schema and rows
-//        System.out.println("Schema: " + schema);
-//        System.out.println("Rows:");
-//        for (List<String> row : rows) {
-//            System.out.println(row);
-//        }
-//
-//        // Check if the row contains a valid phone number
-//        for (List<String> row : rows) {
-//            if (row.size() > phoneIndex) { // Ensure row is long enough to contain a phone number
-//                String phone = row.get(phoneIndex).trim();
-//                phoneNumbers.add(phone);
-//            } else {
-//                System.out.println("Skipping row due to insufficient columns: " + row);
-//            }
-//        }
-//    }
+
     private void loadExistingPhoneNumbers() throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
@@ -97,14 +50,6 @@ class Table {
     }
 
 
-
-//    private void writeSchemaToFile() throws IOException {
-//        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-//            writer.write(String.join(",", schema));
-//            writer.newLine();
-//        }
-//    }
-    
     private void writeSchemaToFile() throws IOException {
         // Trim spaces from each column name in the schema
         List<String> trimmedSchema = new ArrayList<>();
@@ -123,24 +68,7 @@ class Table {
         return !phoneNumbers.contains(phoneNumber);
     }
     
-//    public void insertRow(List<String> row) throws IOException {
-//        if (row.size() != schema.size()) {
-//            throw new IllegalArgumentException("Row size doesn't match schema size.");
-//        }
-//
-//        // Check if the row already exists before inserting
-//        List<List<String>> rows = retrieveRows();
-//        if (rows.contains(row)) {
-//            System.out.println("Error: Duplicate row, not inserting.");
-//            return;  // Avoid inserting duplicate row
-//        }
-//
-//        // If the row is not a duplicate, proceed with insertion
-//        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
-//            writer.write(String.join(",", row));
-//            writer.newLine();
-//        }
-//    }
+
     public void insertRow(List<String> row) throws IOException {
         System.out.println("Original row before trimming: " + row);
 
@@ -197,11 +125,6 @@ class Table {
 
 
 
-
-
-
-
-
     public List<List<String>> retrieveRows() throws IOException {
         List<List<String>> rows = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -214,6 +137,7 @@ class Table {
         }
         return rows;
     }
+    
 
     public void printTable() throws IOException {
         List<List<String>> rows = retrieveRows();
@@ -285,10 +209,6 @@ class Table {
             System.out.println("No matching records found for condition: " + column + " = " + cleanedValue);
         }
     }
-
-
-
-
 
 
     public void deleteRows(String column, String value) throws IOException {
