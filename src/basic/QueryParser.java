@@ -2,19 +2,15 @@ package basic;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class QueryParser {
+    private Database database;
 
-    private Table table;
-    
-    private Set<String> phoneNumbers = new HashSet<>(); 
-
-    public QueryParser(Table table) {
-        this.table = table;
+    public QueryParser(Database database) {
+        this.database = database;
     }
 
     // Parse the query and call appropriate methods
@@ -29,15 +25,37 @@ public class QueryParser {
             handleDeleteQuery(query);
         } else if (query.startsWith("UPDATE")) {
             handleUpdateQuery(query);
+        } else if (query.startsWith("CREATE TABLE")) {
+            handleCreateTableQuery(query);
         } else {
             System.out.println("Unknown command: " + query);
         }
     }
 
-   
-    public void handleInsertQuery(String query) throws IOException {
-        // Extract the values from the query
-        query = query.trim().replace("insert into " + table.getTableName() + " values", "").trim();
+    private void handleCreateTableQuery(String query) throws IOException {
+        query = query.replace("CREATE TABLE", "").trim();
+        String[] parts = query.split("\\(");
+        if (parts.length != 2) {
+            System.out.println("Invalid CREATE TABLE syntax.");
+            return;
+        }
+
+        String tableName = parts[0].trim();
+        String[] columns = parts[1].replace(")", "").split(",");
+        List<String> schema = Arrays.stream(columns).map(String::trim).collect(Collectors.toList());
+
+        database.createTable(tableName, schema);
+    }
+
+    private void handleInsertQuery(String query) throws IOException {
+        String tableName = query.split("INTO")[1].split("VALUES")[0].trim();
+        Table table = database.getTable(tableName);
+        if (table == null) {
+            System.out.println("Table " + tableName + " does not exist.");
+            return;
+        }
+
+        query = query.trim().replace("INSERT INTO " + table.getTableName() + " VALUES", "").trim();
         query = query.substring(1, query.length() - 1); // Remove the parentheses
         String[] values = query.split(",");
 
@@ -49,29 +67,33 @@ public class QueryParser {
         List<String> row = List.of(values); // Convert to a list of values
 
         // Validate phone number format (this can be in the QueryParser)
-        String phone = row.get(table.getSchema().indexOf("phone"));
-        phone = phone.trim();  // Ensure no leading or trailing spaces
-        phone = phone.replaceAll("[^\\d]", "");  // Remove any non-digit characters
-        System.out.println("Phone after cleaning: '" + phone + "'");
-
-        if (!phone.matches("^(\\(?\\d{4}\\)?[-\\s]?\\d{3}[-\\s]?\\d{3}|\\d{10})$")) {
-            System.out.println("Invalid phone number format.");
-            return;
-        }
-        // Check if phone number is unique
-        if (!table.isPhoneNumberUnique(phone)) {
-            System.out.println("Error executing query: Phone number must be unique.");
-            return; // Return without inserting if phone number is not unique
-        }
+//        String phone = row.get(table.getSchema().indexOf("PHONE"));
+//        phone = phone.trim().replaceAll("[^\\d]", "");  // Remove any non-digit characters
+//        System.out.println("Phone after cleaning: '" + phone + "'");
+//
+//        if (!phone.matches("^(\\(?\\d{4}\\)?[-\\s]?\\d{3}[-\\s]?\\d{3}|\\d{10})$")) {
+//            System.out.println("Invalid phone number format.");
+//            return;
+//        }
+//        // Check if phone number is unique
+//        if (!table.isPhoneNumberUnique(phone)) {
+//            System.out.println("Error executing query: Phone number must be unique.");
+//            return; // Return without inserting if phone number is not unique
+//        }
 
         // If phone number is valid and unique, insert the row into the table
         table.insertRow(row);
         System.out.println("Row inserted successfully!");
     }
 
-
-    // Handle SELECT query with or without WHERE clause
     private void handleSelectQuery(String query) throws IOException {
+        String tableName = query.split("FROM")[1].split("WHERE")[0].trim();
+        Table table = database.getTable(tableName);
+        if (table == null) {
+            System.out.println("Table " + tableName + " does not exist.");
+            return;
+        }
+
         if (query.startsWith("SELECT * FROM " + table.getTableName().toUpperCase())) {
             if (query.contains("WHERE")) {
                 String[] parts = query.split("WHERE");
@@ -95,10 +117,11 @@ public class QueryParser {
         }
     }
 
-    // Handle DELETE query with WHERE clause
     private void handleDeleteQuery(String query) throws IOException {
-        if (!query.startsWith("DELETE FROM " + table.getTableName().toUpperCase())) {
-            System.out.println("Invalid DELETE query.");
+        String tableName = query.split("FROM")[1].split("WHERE")[0].trim();
+        Table table = database.getTable(tableName);
+        if (table == null) {
+            System.out.println("Table " + tableName + " does not exist.");
             return;
         }
 
@@ -122,10 +145,11 @@ public class QueryParser {
         table.deleteRows(column, value);
     }
 
-    // Handle UPDATE query with SET and WHERE clause
     private void handleUpdateQuery(String query) throws IOException {
-        if (!query.startsWith("UPDATE " + table.getTableName().toUpperCase())) {
-            System.out.println("Invalid UPDATE query.");
+        String tableName = query.split("UPDATE")[1].split("SET")[0].trim();
+        Table table = database.getTable(tableName);
+        if (table == null) {
+            System.out.println("Table " + tableName + " does not exist.");
             return;
         }
 

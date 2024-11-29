@@ -1,11 +1,7 @@
 package basic;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 class Table {
     private String tableName;
@@ -15,19 +11,16 @@ class Table {
 
     public Table(String tableName, List<String> schema) throws IOException {
         this.tableName = tableName;
-        this.schema = Arrays.asList("id", "name", "age", "phone");
+        this.schema = schema; // Accept schema as a parameter
         this.file = new File(tableName + ".csv");
 
         if (!file.exists()) {
             file.createNewFile();
             writeSchemaToFile();
         } else {
-        	loadExistingPhoneNumbers();
+            loadExistingPhoneNumbers();
         }
-        
-        
     }
-    
 
     private void loadExistingPhoneNumbers() throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -35,95 +28,57 @@ class Table {
             reader.readLine(); // Skip header line
 
             int phoneIndex = schema.indexOf("phone");
-            if (phoneIndex == -1) {
-                throw new IllegalArgumentException("Phone column not found in the schema.");
-            }
-
-            while ((line = reader.readLine()) != null) {
-                String[] row = line.split(",");
-                if (row.length > phoneIndex) {
-                    String phone = row[phoneIndex].trim();
-                    phoneNumbers.add(phone);
+            if (phoneIndex != -1) {
+                while ((line = reader.readLine()) != null) {
+                    String[] row = line.split(",");
+                    if (row.length > phoneIndex) {
+                        String phone = row[phoneIndex].trim();
+                        phoneNumbers.add(phone);
+                    }
                 }
             }
         }
     }
 
-
     private void writeSchemaToFile() throws IOException {
-        // Trim spaces from each column name in the schema
-        List<String> trimmedSchema = new ArrayList<>();
-        for (String column : schema) {
-            trimmedSchema.add(column.trim());  // Trim spaces from column names
-        }
-
-        // Write the schema (header) to the file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(String.join(",", trimmedSchema));  // Write header without extra spaces
+            writer.write(String.join(",", schema));  // Write header
             writer.newLine();
         }
     }
-    
+
     public boolean isPhoneNumberUnique(String phoneNumber) {
         return !phoneNumbers.contains(phoneNumber);
     }
-    
 
     public void insertRow(List<String> row) throws IOException {
-        System.out.println("Original row before trimming: " + row);
-
-        // Validate row size
         if (row.size() != schema.size()) {
             throw new IllegalArgumentException("Row size doesn't match schema size.");
         }
 
-        // Create a cleaned version of the row
         List<String> cleanedRow = new ArrayList<>();
         for (String cell : row) {
-            System.out.println("Cell before trim: '" + cell + "'");
-
-            // General cleanup for SQL queries with missing letters or unwanted parts
-            String cleanedCell = cell.trim()
-                                     .replaceAll("(?i)^insert\\s+into\\s+users\\s+values\\(", "")  // Remove 'insert into users values(' at the start
-                                     .replaceAll("(?i)^nsert\\s+into\\s+users\\s+values\\(", "")  // Handle 'NSERT INTO USERS VALUES('
-                                     .replaceAll("(?i)insert\\s+into\\s+users\\s+values", "")  // Clean up 'insert into users values' anywhere
-                                     .replaceAll("\\)$", "")  // Remove closing parenthesis at the end
-                                     .trim();  // Trim spaces from each cell value
-
-            // Add cleaned cell to the cleaned row
-            cleanedRow.add(cleanedCell);
+            cleanedRow.add(cell.trim().replaceAll("(?i)^insert\\s+into\\s+users\\s+values\\(", "").replaceAll("(?i)^nsert\\s+into\\s+users\\s+values\\(", "").replaceAll("(?i)insert\\s+into\\s+users\\s+values", "").replaceAll("\\)$", "").trim());
         }
 
-        // Print the cleaned row for debugging
-        System.out.println("Cleaned row: " + cleanedRow);
-
-        // Extract and validate the phone number
-        String phone = cleanedRow.get(schema.indexOf("phone")).trim();
-        System.out.println("Phone before validation: '" + phone + "'");
-
-        // Validate if phone number is unique
-        if (!isPhoneNumberUnique(phone)) {
-            throw new IllegalArgumentException("Phone number must be unique.");
+        int phoneIndex = schema.indexOf("phone");
+        if (phoneIndex != -1) {
+            String phone = cleanedRow.get(phoneIndex).trim().replaceAll("[^\\d]", "");
+            if (!phone.matches("^(\\(?\\d{4}\\)?[-\\s]?\\d{3}[-\\s]?\\d{3}|\\d{10})$")) {
+                throw new IllegalArgumentException("Invalid phone number format.");
+            }
+            if (!isPhoneNumberUnique(phone)) {
+                throw new IllegalArgumentException("Phone number must be unique.");
+            }
+            phoneNumbers.add(phone);
         }
 
-        // Add phone number to the set
-        phoneNumbers.add(phone);
-
-        // Join the cleaned row into a CSV line
         String rowData = String.join(",", cleanedRow);
-
-        // Print row data before writing
-        System.out.println("Row data before writing: " + rowData);
-
-        // Write to the file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
-            writer.write(rowData);  // Write the cleaned row to the file
-            writer.newLine();  // Add a new line after the row
-            System.out.println("Row inserted successfully.");
+            writer.write(rowData);
+            writer.newLine();
         }
     }
-
-
 
     public List<List<String>> retrieveRows() throws IOException {
         List<List<String>> rows = new ArrayList<>();
@@ -137,7 +92,6 @@ class Table {
         }
         return rows;
     }
-    
 
     public void printTable() throws IOException {
         List<List<String>> rows = retrieveRows();
@@ -147,58 +101,22 @@ class Table {
         }
     }
 
-    // New method for printing rows that match a specific condition
- // In Table.java
     public void printFilteredTable(String column, String value) throws IOException {
-        int columnIndex = -1;
-
-        // Find the column index for the specified column name
-        for (int i = 0; i < schema.size(); i++) {
-            if (schema.get(i).equalsIgnoreCase(column)) {
-                columnIndex = i;
-                break;
-            }
-        }
-
-        // If the column does not exist, output a message and return
+        int columnIndex = schema.indexOf(column);
         if (columnIndex == -1) {
             System.out.println("Column " + column + " does not exist.");
             return;
         }
 
         List<List<String>> rows = retrieveRows();
-        System.out.println(String.join(", ", schema));  // Print the schema header
+        System.out.println(String.join(", ", schema));
 
         boolean recordFound = false;
-        
-        // Clean the condition value to remove any unwanted characters (like semicolons)
         String cleanedValue = value.trim().replace(";", "").replace("'", "");
 
         for (List<String> row : rows) {
-            String cellValue = row.get(columnIndex).trim();  // Trim whitespace around the cell value
-            String trimmedValue = cleanedValue.trim();  // Trim value to compare
-
-            boolean matches = false;
-
-            // Debugging output to check row values and column data types
-//            System.out.println("Checking row: " + row);
-//            System.out.println("Comparing value: '" + cellValue + "' with condition value: '" + trimmedValue + "'");
-
-            try {
-                // Handle integer comparison for columns like id and age
-                if (column.equalsIgnoreCase("id") || column.equalsIgnoreCase("age")) {
-                    int intValue = Integer.parseInt(trimmedValue);
-                    int rowValue = Integer.parseInt(cellValue);
-                    matches = rowValue == intValue;
-                } else {
-                    // Case-insensitive string comparison for other columns
-                    matches = cellValue.equalsIgnoreCase(trimmedValue);
-                }
-            } catch (NumberFormatException e) {
-                // Fallback for string comparison if a NumberFormatException occurs
-                matches = cellValue.equalsIgnoreCase(trimmedValue);
-            }
-
+            String cellValue = row.get(columnIndex).trim();
+            boolean matches = cellValue.equalsIgnoreCase(cleanedValue);
             if (matches) {
                 System.out.println(String.join(", ", row));
                 recordFound = true;
@@ -210,7 +128,6 @@ class Table {
         }
     }
 
-
     public void deleteRows(String column, String value) throws IOException {
         int columnIndex = schema.indexOf(column);
         if (columnIndex == -1) {
@@ -220,7 +137,7 @@ class Table {
 
         List<List<String>> rows = retrieveRows();
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(String.join(",", schema)); // Write header
+            writer.write(String.join(",", schema));
             writer.newLine();
             for (List<String> row : rows) {
                 if (!row.get(columnIndex).equals(value)) {
@@ -243,14 +160,13 @@ class Table {
 
         List<List<String>> rows = retrieveRows();
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(String.join(",", schema)); // Write header
+            writer.write(String.join(",", schema));
             writer.newLine();
             for (List<String> row : rows) {
-                List<String> updatedRow = new ArrayList<>(row);
-                if (updatedRow.get(columnIndex).equals(value)) {
-                    updatedRow.set(targetIndex, newValue);
+                if (row.get(columnIndex).equals(value)) {
+                    row.set(targetIndex, newValue);
                 }
-                writer.write(String.join(",", updatedRow));
+                writer.write(String.join(",", row));
                 writer.newLine();
             }
         }
@@ -258,13 +174,7 @@ class Table {
     }
 
     public String getTableName() {
-        return this.tableName;
+        return tableName;
     }
-    
-    public List<String> getSchema() {
-        return schema;
-    }
-    public Set<String> getPhoneNumbers() {
-        return phoneNumbers;
-    }
+
 }
