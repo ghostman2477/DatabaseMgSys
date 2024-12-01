@@ -8,6 +8,7 @@ class Table {
     private List<String> schema; // Column names
     private File file;
     private Set<String> phoneNumbers = new HashSet<>();
+    private Set<Integer> usedIds = new HashSet<>();
 
     public Table(String tableName, List<String> schema) throws IOException {
         this.tableName = tableName;
@@ -19,6 +20,10 @@ class Table {
             writeSchemaToFile();
         } else {
             loadExistingPhoneNumbers();
+            if(schema.contains("ID")) {
+            	loadExistingIds();
+            }
+            
         }
     }
 
@@ -39,7 +44,43 @@ class Table {
             }
         }
     }
-
+    
+    private void loadExistingIds() throws IOException {
+    	int idIndex = schema.indexOf("id"); 
+    	if (idIndex == -1) { 
+    		return; // No "ID" column, nothing to load 
+    	}
+    	try (BufferedReader reader = new BufferedReader(new FileReader(file))) { 
+    		String line; reader.readLine(); 
+    		// Skip header line 
+    		while ((line = reader.readLine()) != null) { 
+    			String[] row = line.split(","); 
+    			if (row.length > idIndex) { 
+    				int id = Integer.parseInt(row[idIndex].trim()); usedIds.add(id); 
+    			} 
+    		} 
+    	} 
+    }
+    	 
+    /*
+    private void loadExistingIds() throws IOException { 
+    	try (BufferedReader reader = new BufferedReader(new FileReader(file))) { 
+    		String line; reader.readLine(); 
+    		// Skip header line 
+    		int idIndex = schema.indexOf("ID"); 
+    		if (idIndex == -1) { 
+    			throw new IllegalArgumentException("ID column not found in the schema."); 
+    		} 
+    		while ((line = reader.readLine()) != null) { 
+    			String[] row = line.split(","); 
+    			if (row.length > idIndex) { 
+    				int id = Integer.parseInt(row[idIndex].trim()); usedIds.add(id); 
+    			} 
+    		} 
+    	} 
+    }
+    
+*/
     private void writeSchemaToFile() throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(String.join(",", schema));  // Write header
@@ -50,6 +91,10 @@ class Table {
     public boolean isPhoneNumberUnique(String phoneNumber) {
         return !phoneNumbers.contains(phoneNumber);
     }
+    
+    public boolean isIdUnique(int id) { 
+    	return !usedIds.contains(id); 
+    }
 
     public void insertRow(List<String> row) throws IOException {
         if (row.size() != schema.size()) {
@@ -58,8 +103,17 @@ class Table {
 
         List<String> cleanedRow = new ArrayList<>();
         for (String cell : row) {
-            cleanedRow.add(cell.trim().replaceAll("(?i)^insert\\s+into\\s+users\\s+values\\(", "").replaceAll("(?i)^nsert\\s+into\\s+users\\s+values\\(", "").replaceAll("(?i)insert\\s+into\\s+users\\s+values", "").replaceAll("\\)$", "").trim());
+            cleanedRow.add(cell.trim().replaceAll("(?i)^insert\\s+into\\s+users\\s+values\\(", "")
+            		.replaceAll("(?i)^nsert\\s+into\\s+users\\s+values\\(", "")
+            		.replaceAll("(?i)insert\\s+into\\s+users\\s+values", "")
+            		.replaceAll("\\)$", "").trim());
         }
+//        
+        int id = Integer.parseInt(cleanedRow.get(schema.indexOf("ID")).trim()); 
+        if (!isIdUnique(id)) { 
+        	throw new IllegalArgumentException("ID must be unique."); 
+        	} 
+        usedIds.add(id);		
 
         int phoneIndex = schema.indexOf("phone");
         if (phoneIndex != -1) {
